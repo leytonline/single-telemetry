@@ -51,5 +51,8 @@ void SingleTelemetry::TimeFunction(std::string str, F fn, A&&... args) {
 
     ss << (end - start) << '\n';
 
+    // single lock is acquired in this function,
+    // if a different thread closes file while TimeFunction is running,
+    // it may time and execute fn but not be able to log the result
     Write(ss.str().c_str());
 }
