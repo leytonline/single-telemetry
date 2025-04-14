@@ -4,6 +4,7 @@ static FILE* _output = nullptr;
 static std::mutex _mutex;
 
 int SingleTelemetry::SetFile(std::string str) {
+    std::lock_guard<std::mutex> lock(_mutex);
     if (_output != NULL)
     {
         return -EEXIST;
@@ -16,10 +17,16 @@ int SingleTelemetry::SetFile(std::string str) {
 
 void SingleTelemetry::Write(std::string str) {
     std::lock_guard<std::mutex> lock(_mutex); // says fprintf is thread safe but just for exercise
+
+    // some logs will get dropped if this tries to acquire the lock
+    // and some other thread has called close
+    if (_output == nullptr) return; 
+
     fprintf(_output, "%s", str.c_str());
 }
 
 int SingleTelemetry::Close() {
+    std::lock_guard<std::mutex> lock(_mutex);
     if (!_output) return -ENOENT;
     fclose(_output);
     _output = nullptr;
